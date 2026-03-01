@@ -1,7 +1,7 @@
 
 import defaults from 'default-args';
 import { Client } from '@notionhq/client';
-import { NotionToMarkdown } from 'notion-2-markdown/build/notion-to-md.js';
+import { NotionToMarkdown } from 'notion-to-md';
 import { convertPropsCase } from '../utils/transformVariables.js';
 
 export class NotionModule {
@@ -61,7 +61,7 @@ export class NotionModule {
 
   async _getPageMarkdown(page_id) {
     const mdBlocks = await this.notion2md.pageToMarkdown(page_id);
-    return this.notion2md.toMarkdownString(mdBlocks);
+    return this.notion2md.toMarkdownString(mdBlocks).parent;
   }
 
   async updateBlogStatus(page_id) {

@@ -53,7 +53,6 @@
     "default-args": "^1.0.1",
     "dotenv": "^16.0.1",
     "js-yaml": "^4.1.0",
-    "notion-2-markdown": "^2.4.0",
     "notion-to-md": "^3.1.9",
     "remark-frontmatter": "^4.0.1",
     "remark-gfm": "^3.0.1",
