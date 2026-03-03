@@ -6,7 +6,10 @@ import banner from 'rollup-plugin-banner2';
 import json from '@rollup/plugin-json';
 import shebang from 'rollup-plugin-shebang-bin';
 import S from 'tiny-dedent';
-import packageJson from './package.json';
+
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const packageJson = require('./package.json');
 
 const license = () => S(`
   /*!

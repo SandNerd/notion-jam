@@ -19,7 +19,10 @@ export class NotionModule {
     const databaseId = getDatabaseId(database);
 
     this.database_id = databaseId;
-    this.notion = new Client({ auth: secret });
+    this.notion = new Client({
+      auth: secret,
+      notionVersion: '2022-06-28',
+    });
     this.notion2md = new NotionToMarkdown({ notionClient: this.notion });
   }
 
