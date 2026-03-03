@@ -129,10 +129,11 @@ class NotionModule {
     let markdown = this.notion2md.toMarkdownString(mdBlocks);
 
     // Fix indentation issues with Notion toggles (especially headings with toggles).
-    // notion-to-md indents children with a tab, which GitHub renders as code blocks.
-    // This regex removes one level of leading tab indentation from lines that follow a heading.
-    markdown = markdown.replace(/(^#+ .*\n)((?:\n?\t.*(?:\n|$))+)/gm, (match, heading, children) => {
-      return heading + children.replace(/^\t/gm, '');
+    // notion-to-md indents children with 4 spaces or a tab, which GitHub renders as code blocks.
+    // This regex matches a heading, then matches all subsequent lines that are either empty or indented.
+    // It removes one level of indentation (up to 4 spaces or 1 tab) from each of those indented lines.
+    markdown = markdown.replace(/(^#+ .*(?:\n|$))((?:^[ \t]*\n|^(?:\t| {1,4}).*(?:\n|$))*)/gm, (match, heading, children) => {
+      return heading + children.replace(/^(?:\t| {1,4})/gm, '');
     });
 
     return markdown;
