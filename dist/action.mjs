@@ -126,7 +126,16 @@ class NotionModule {
 
   async _getPageMarkdown(page_id) {
     const mdBlocks = await this.notion2md.pageToMarkdown(page_id);
-    return this.notion2md.toMarkdownString(mdBlocks);
+    let markdown = this.notion2md.toMarkdownString(mdBlocks);
+
+    // Fix indentation issues with Notion toggles (especially headings with toggles).
+    // notion-to-md indents children with a tab, which GitHub renders as code blocks.
+    // This regex removes one level of leading tab indentation from lines that follow a heading.
+    markdown = markdown.replace(/(^#+ .*\n)((?:\n?\t.*(?:\n|$))+)/gm, (match, heading, children) => {
+      return heading + children.replace(/^\t/gm, '');
+    });
+
+    return markdown;
   }
 
   async updateBlogStatus(page_id) {
