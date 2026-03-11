@@ -1,7 +1,7 @@
 
 import defaults from 'default-args';
 import { Client } from '@notionhq/client';
-import { NotionToMarkdown } from 'notion-2-markdown/build/notion-to-md.js';
+import { NotionToMarkdown } from 'notion-to-md';
 import { convertPropsCase } from '../utils/transformVariables.js';
 
 export class NotionModule {
@@ -27,6 +27,30 @@ export class NotionModule {
       notionVersion: '2022-06-28',
     });
     this.notion2md = new NotionToMarkdown({ notionClient: this.notion });
+
+    this.notion2md.setCustomTransformer('synced_block', async (block) => {
+      const { synced_block } = block;
+      if (!synced_block) return '';
+
+      // If it's a reference to another block
+      if (synced_block.synced_from) {
+        const originalBlockId = synced_block.synced_from.block_id;
+        try {
+          // Fetch the children of the original block
+          const mdBlocks = await this.notion2md.blocksToMarkdown(
+            await this.notion2md.pageToMarkdown(originalBlockId)
+          );
+          return this.notion2md.toMarkdownString(mdBlocks);
+        }
+        catch (error) {
+          console.error(`Error fetching synced block ${originalBlockId}:`, error);
+          return '';
+        }
+      }
+
+      // If it's the original block, let the default parser handle its children
+      return false; // returning false tells notion-to-md to use default behavior
+    });
   }
 
   async fetchArticles() {
