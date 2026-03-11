@@ -21,6 +21,7 @@ async function main() {
       downloadImageTimeout: core.getInput('DOWNLOAD_IMAGE_TIMEOUT'),
       skipDownloadedImages: core.getInput('SKIP_DOWNLOADED_IMAGES'),
       downloadFrontmatterImages: core.getInput('DOWNLOAD_FRONTMATTER_IMAGES'),
+      excludeMetadata: core.getInput('EXCLUDE_METADATA'),
     });
   } catch (error) {
     console.error(error);

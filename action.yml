@@ -44,6 +44,10 @@ inputs:
   DOWNLOAD_FRONTMATTER_IMAGES:
     description: 'Downloads image urls in the frontmatter'
     required: false
+  EXCLUDE_METADATA:
+    description: 'Comma separated list of metadata fields to exclude from the frontmatter (example: last_edited_time,last_edited_by)'
+    required: false
+    default: 'last_edited_time,last_edited_by'
 
 runs:
   

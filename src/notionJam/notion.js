@@ -12,7 +12,10 @@ export class NotionModule {
       filterProp: 'Status',
       filterValues: 'Ready,Published',
       caseType: 'snake',
+      excludeMetadata: '',
     }, options);
+
+    this.options.excludeMetadata = (this.options.excludeMetadata || '').split(',').map(s => s.trim()).filter(Boolean);
 
     this.options.filterValues = Array.isArray(this.options.filterValues) ? this.options.filterValues : this.options.filterValues.split(',').map(value => value.trim());
 
@@ -39,6 +42,10 @@ export class NotionModule {
       ...toPlainProperties(page.properties),
       content: await this._getPageMarkdown(page.id),
     };
+
+    if (this.options.excludeMetadata) {
+      this.options.excludeMetadata.forEach(key => delete article[key]);
+    }
 
     if (this.options.caseType) {
       article = convertPropsCase(article, this.options.caseType);
@@ -95,6 +102,8 @@ function toPlainPage(page) {
   return {
     created_time: new Date(page.created_time),
     last_edited_time: new Date(page.last_edited_time),
+    created_by: page.created_by.name || page.created_by.id,
+    last_edited_by: page.last_edited_by.name || page.last_edited_by.id,
 
     cover_image: page.cover?.external?.url || page.cover?.file.url,
 
@@ -149,6 +158,12 @@ function toPlainProperties(properties) {
     },
     last_edited_time(prop) {
       return new Date(prop.last_edited_time);
+    },
+    created_by(prop) {
+      return prop.created_by.name || prop.created_by.id;
+    },
+    last_edited_by(prop) {
+      return prop.last_edited_by.name || prop.last_edited_by.id;
     },
   };
   const obj = {};

@@ -75,7 +75,10 @@ class NotionModule {
       filterProp: 'Status',
       filterValues: 'Ready,Published',
       caseType: 'snake',
+      excludeMetadata: '',
     }, options);
+
+    this.options.excludeMetadata = (this.options.excludeMetadata || '').split(',').map(s => s.trim()).filter(Boolean);
 
     this.options.filterValues = Array.isArray(this.options.filterValues) ? this.options.filterValues : this.options.filterValues.split(',').map(value => value.trim());
 
@@ -102,6 +105,10 @@ class NotionModule {
       ...toPlainProperties(page.properties),
       content: await this._getPageMarkdown(page.id),
     };
+
+    if (this.options.excludeMetadata) {
+      this.options.excludeMetadata.forEach(key => delete article[key]);
+    }
 
     if (this.options.caseType) {
       article = convertPropsCase(article, this.options.caseType);
@@ -158,6 +165,8 @@ function toPlainPage(page) {
   return {
     created_time: new Date(page.created_time),
     last_edited_time: new Date(page.last_edited_time),
+    created_by: page.created_by.name || page.created_by.id,
+    last_edited_by: page.last_edited_by.name || page.last_edited_by.id,
 
     cover_image: page.cover?.external?.url || page.cover?.file.url,
 
@@ -212,6 +221,12 @@ function toPlainProperties(properties) {
     },
     last_edited_time(prop) {
       return new Date(prop.last_edited_time);
+    },
+    created_by(prop) {
+      return prop.created_by.name || prop.created_by.id;
+    },
+    last_edited_by(prop) {
+      return prop.last_edited_by.name || prop.last_edited_by.id;
     },
   };
   const obj = {};
@@ -618,6 +633,7 @@ async function run(options) {
     skipDownloadedImages: true,
     articlePath: 'posts/{title}/index.md',
     assetsPath: '.', // relative to the markdown file if starts with '.', or absolute otherwise
+    excludeMetadata: 'last_edited_time,last_edited_by',
   }, options);
 
   options.parallelPages = toInt(options.parallelPages);
@@ -676,6 +692,7 @@ async function main() {
       downloadImageTimeout: process.env.DOWNLOAD_IMAGE_TIMEOUT,
       skipDownloadedImages: process.env.SKIP_DOWNLOADED_IMAGES,
       downloadFrontmatterImages: process.env.DOWNLOAD_FRONTMATTER_IMAGES,
+      excludeMetadata: process.env.EXCLUDE_METADATA,
     });
   } catch (error) {
     console.error(error);

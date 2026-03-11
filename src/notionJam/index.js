@@ -27,6 +27,7 @@ export default async function run(options) {
     skipDownloadedImages: true,
     articlePath: 'posts/{title}/index.md',
     assetsPath: '.', // relative to the markdown file if starts with '.', or absolute otherwise
+    excludeMetadata: 'last_edited_time,last_edited_by',
   }, options);
 
   options.parallelPages = toInt(options.parallelPages);

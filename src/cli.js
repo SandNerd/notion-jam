@@ -18,6 +18,7 @@ async function main() {
       downloadImageTimeout: process.env.DOWNLOAD_IMAGE_TIMEOUT,
       skipDownloadedImages: process.env.SKIP_DOWNLOADED_IMAGES,
       downloadFrontmatterImages: process.env.DOWNLOAD_FRONTMATTER_IMAGES,
+      excludeMetadata: process.env.EXCLUDE_METADATA,
     });
   } catch (error) {
     console.error(error);
