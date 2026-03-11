@@ -1,6 +1,6 @@
 // import babel from 'rollup-plugin-babel';
-// import resolve from 'rollup-plugin-node-resolve';
-// import commonjs from 'rollup-plugin-commonjs';
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from 'rollup-plugin-commonjs';
 // import { terser } from 'rollup-plugin-terser';
 import banner from 'rollup-plugin-banner2';
 import json from '@rollup/plugin-json';
@@ -52,19 +52,14 @@ const config = [
       },
     ],
     external: [/node_modules/],
-    browser: false,
     plugins: [
-      // resolve({
-      //   preferBuiltins: true,
-      // }),
-      //commonjs(),
+      resolve({
+        preferBuiltins: true,
+        mainFields: ['module', 'main'],
+        extensions: ['.js', '.mjs', '.json', '.node']
+      }),
+      commonjs(),
       json(),
-      // babel({
-      //   assumptions,
-      //   plugins: [
-
-      //   ]
-      // }),
       banner(license),
       shebang(),
     ]
@@ -81,22 +76,22 @@ const config = [
         //exports: 'default',
       },
     ],
-    external: [/node_modules/],
-    browser: false,
+    // external: [/node_modules/],
     plugins: [
-      // resolve({
-      //   preferBuiltins: true,
-      // }),
-      //commonjs(),
+      resolve({
+        preferBuiltins: true,
+        mainFields: ['module', 'main'],
+        extensions: ['.js', '.mjs', '.json', '.node']
+      }),
+      commonjs(),
       json(),
-      // babel({
-      //   assumptions,
-      //   plugins: [
-
-      //   ]
-      // }),
       banner(license)
-    ]
+    ],
+    onwarn(warning, warn) {
+      if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+      if (warning.code === 'THIS_IS_UNDEFINED') return;
+      warn(warning);
+    }
   },
 ];
 
