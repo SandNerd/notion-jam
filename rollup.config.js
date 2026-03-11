@@ -1,6 +1,6 @@
-// import babel from 'rollup-plugin-babel';
+import babel from '@rollup/plugin-babel';
 import resolve from '@rollup/plugin-node-resolve';
-import commonjs from 'rollup-plugin-commonjs';
+import commonjs from '@rollup/plugin-commonjs';
 // import { terser } from 'rollup-plugin-terser';
 import banner from 'rollup-plugin-banner2';
 import json from '@rollup/plugin-json';
@@ -24,19 +24,19 @@ const license = () => S(`
 // const sourcemap = production ? true : 'inline';
 // const entry = 'src/index.js';
 
-// const assumptions = {
-//   constantSuper: true,
-//   enumerableModuleMeta: true,
-//   ignoreFunctionLength: true,
-//   ignoreToPrimitiveHint: true,
-//   noClassCalls: true,
-//   noDocumentAll: true,
-//   noNewArrows: true,
-//   privateFieldsAsProperties: true,
-//   setClassMethods: true,
-//   setComputedProperties: true,
-//   setPublicClassFields: true,
-// };
+const assumptions = {
+  constantSuper: true,
+  enumerableModuleMeta: true,
+  ignoreFunctionLength: true,
+  ignoreToPrimitiveHint: true,
+  noClassCalls: true,
+  noDocumentAll: true,
+  noNewArrows: true,
+  privateFieldsAsProperties: true,
+  setClassMethods: true,
+  setComputedProperties: true,
+  setPublicClassFields: true,
+};
 
 const config = [
 
@@ -56,9 +56,12 @@ const config = [
       resolve({
         preferBuiltins: true,
         mainFields: ['module', 'main'],
-        extensions: ['.js', '.mjs', '.json', '.node']
+        extensions: ['.js', '.mjs', '.json', '.node'],
+        exportConditions: ['node']
       }),
-      commonjs(),
+      commonjs({
+        transformMixedEsModules: true,
+      }),
       json(),
       banner(license),
       shebang(),
@@ -81,15 +84,33 @@ const config = [
       resolve({
         preferBuiltins: true,
         mainFields: ['module', 'main'],
-        extensions: ['.js', '.mjs', '.json', '.node']
+        extensions: ['.js', '.mjs', '.json', '.node'],
+        exportConditions: ['node']
       }),
-      commonjs(),
+      commonjs({
+        transformMixedEsModules: true,
+        defaultIsModuleExports: true,
+      }),
       json(),
+      babel({
+        babelHelpers: 'bundled',
+        assumptions,
+        presets: [
+          ['@babel/preset-env', {
+            targets: { node: 'current' },
+            modules: false
+          }]
+        ],
+        plugins: [
+          ['@babel/plugin-proposal-class-properties', { loose: true }],
+          ['@babel/plugin-proposal-private-methods', { loose: true }]
+        ],
+        exclude: [] // Transpile everything including node_modules
+      }),
       banner(license)
     ],
+    context: 'this',
     onwarn(warning, warn) {
-      if (warning.code === 'CIRCULAR_DEPENDENCY') return;
-      if (warning.code === 'THIS_IS_UNDEFINED') return;
       warn(warning);
     }
   },
