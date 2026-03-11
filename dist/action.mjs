@@ -113547,23 +113547,39 @@ class NotionModule {
       const {
         synced_block
       } = block;
-      if (!synced_block) return '';
+      if (!synced_block || !synced_block.synced_from) return false;
+      const originalBlockId = synced_block.synced_from.block_id;
 
-      // If it's a reference to another block
-      if (synced_block.synced_from) {
-        const originalBlockId = synced_block.synced_from.block_id;
-        try {
-          // Fetch the children of the original block
-          const mdBlocks = await this.notion2md.pageToMarkdown(originalBlockId);
-          return this.notion2md.toMarkdownString(mdBlocks);
-        } catch (error) {
-          console.error(`Error fetching synced block ${originalBlockId}:`, error);
-          return '';
-        }
+      // Simple recursion guard using a WeakMap or similar would be better, 
+      // but for now let's just use a simple depth counter if we were to pass it.
+      // Since the transformer is called by notion-to-md, we can't easily pass depth.
+      // However, we can track visited IDs for the current process.
+      this.syncedBlockTracker = this.syncedBlockTracker || new Set();
+      if (this.syncedBlockTracker.has(originalBlockId)) {
+        console.warn(`Circular synced block detected: ${originalBlockId}`);
+        return '';
       }
-
-      // If it's the original block, let the default parser handle its children
-      return false; // returning false tells notion-to-md to use default behavior
+      this.syncedBlockTracker.add(originalBlockId);
+      try {
+        const blocks = [];
+        let cursor = undefined;
+        do {
+          const response = await this.notion.blocks.children.list({
+            block_id: originalBlockId,
+            start_cursor: cursor
+          });
+          blocks.push(...response.results);
+          cursor = response.next_cursor;
+        } while (cursor);
+        if (blocks.length === 0) return '';
+        const mdBlocks = await this.notion2md.blocksToMarkdown(blocks);
+        return this.notion2md.toMarkdownString(mdBlocks);
+      } catch (error) {
+        console.error(`Error fetching synced block ${originalBlockId}:`, error);
+        return '';
+      } finally {
+        this.syncedBlockTracker.delete(originalBlockId);
+      }
     });
   }
   async fetchArticles() {
@@ -113602,17 +113618,33 @@ class NotionModule {
     return response.results;
   }
   async _getPageMarkdown(page_id) {
+    this.syncedBlockTracker = new Set();
     const mdBlocks = await this.notion2md.pageToMarkdown(page_id);
     let markdown = this.notion2md.toMarkdownString(mdBlocks);
     if (typeof markdown !== 'string') markdown = String(markdown || '');
-
-    // Fix indentation issues with Notion toggles (especially headings with toggles).
-    // notion-to-md indents children with 4 spaces or a tab, which GitHub renders as code blocks.
-    // This regex matches a heading, then matches all subsequent lines that are either empty or indented.
-    // It removes one level of indentation (up to 4 spaces or 1 tab) from each of those indented lines.
-    markdown = markdown.replace(/(^#+ .*(?:\n|$))((?:^[ \t]*\n|^(?:\t| {1,4}).*(?:\n|$))*)/gm, (match, heading, children) => {
-      return heading + (children || '').replace(/^(?:\t| {1,4})/gm, '');
-    });
+    if (markdown.length > 0) {
+      // Fix indentation issues with Notion toggles (especially headings with toggles).
+      // notion-to-md indents children with 4 spaces or a tab, which GitHub renders as code blocks.
+      // We unindent lines following a heading if they are empty or indented.
+      const lines = markdown.split('\n');
+      let result = [];
+      let inIndentedBlock = false;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.startsWith('#')) {
+          inIndentedBlock = true;
+          result.push(line);
+        } else if (inIndentedBlock && (line.trim() === '' || /^(?:\t| {1,4})/.test(line))) {
+          result.push(line.replace(/^(?:\t| {1,4})/, ''));
+        } else {
+          inIndentedBlock = false;
+          result.push(line);
+        }
+      }
+      markdown = result.join('\n');
+    } else {
+      console.warn(`Warning: Generated markdown for page ${page_id} is empty.`);
+    }
     return markdown;
   }
   async updateBlogStatus(page_id) {
