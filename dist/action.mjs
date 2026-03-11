@@ -113554,7 +113554,7 @@ class NotionModule {
         const originalBlockId = synced_block.synced_from.block_id;
         try {
           // Fetch the children of the original block
-          const mdBlocks = await this.notion2md.blocksToMarkdown(await this.notion2md.pageToMarkdown(originalBlockId));
+          const mdBlocks = await this.notion2md.pageToMarkdown(originalBlockId);
           return this.notion2md.toMarkdownString(mdBlocks);
         } catch (error) {
           console.error(`Error fetching synced block ${originalBlockId}:`, error);
@@ -113604,13 +113604,14 @@ class NotionModule {
   async _getPageMarkdown(page_id) {
     const mdBlocks = await this.notion2md.pageToMarkdown(page_id);
     let markdown = this.notion2md.toMarkdownString(mdBlocks);
+    if (typeof markdown !== 'string') markdown = String(markdown || '');
 
     // Fix indentation issues with Notion toggles (especially headings with toggles).
     // notion-to-md indents children with 4 spaces or a tab, which GitHub renders as code blocks.
     // This regex matches a heading, then matches all subsequent lines that are either empty or indented.
     // It removes one level of indentation (up to 4 spaces or 1 tab) from each of those indented lines.
     markdown = markdown.replace(/(^#+ .*(?:\n|$))((?:^[ \t]*\n|^(?:\t| {1,4}).*(?:\n|$))*)/gm, (match, heading, children) => {
-      return heading + children.replace(/^(?:\t| {1,4})/gm, '');
+      return heading + (children || '').replace(/^(?:\t| {1,4})/gm, '');
     });
     return markdown;
   }
@@ -113689,6 +113690,18 @@ function toPlainProperties(properties) {
     },
     last_edited_by(prop) {
       return prop.last_edited_by.name || prop.last_edited_by.id;
+    },
+    people(prop) {
+      return prop.people.map(p => p.name || p.id).join(', ');
+    },
+    relation(prop) {
+      return prop.relation.map(r => r.id).join(', ');
+    },
+    status(prop) {
+      return prop.status?.name;
+    },
+    formula(prop) {
+      return prop.formula?.string || prop.formula?.number || prop.formula?.boolean || prop.formula?.date?.start;
     }
   };
   const obj = {};
@@ -113696,7 +113709,7 @@ function toPlainProperties(properties) {
     if (types[value.type]) {
       obj[key] = types[value.type](value);
     } else {
-      console.warn(`Unknown block type: ${value.type}`);
+      console.warn(`Unknown property type: ${value.type}`);
       obj[key] = value[value.type];
     }
   }
